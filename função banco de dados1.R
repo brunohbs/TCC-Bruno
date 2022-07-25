@@ -464,7 +464,7 @@ banco = function(jogos,temp,mediamovel,times){
   # Juntando os 2 df criados, ele resulta em um df que apresenta o time, nome do time adversário e quantas vitórias o time adversário teve
   vitorias_opp <- left_join(teste_team,df5,by = "concatena")
   
-  vitorias_opp$FC <- (vitorias_opp$WINS)/jogos
+  vitorias_opp$FC <- (vitorias_opp$WINS)/jogos # Cálculo da proporção de vitórias de cada time oponente
   
   # Agrupando por temporada e time, será feita a média da proporção de vitórias dos adversários. vitorias_opp_final apresenta então o time, a temporada e a força de calendário
   vitorias_opp_final = vitorias_opp %>% group_by(SEASON, TEAM_NAME) %>%
