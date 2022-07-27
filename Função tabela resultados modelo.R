@@ -13,6 +13,25 @@ medidas = function(bancod){
   
   med.testes <- data.frame() # Criando um df vazio
   
+  med.final <- data.frame() # Criando um df vazio
+  
+  for (k in 8:40){
+    for (l in 5){
+      
+      banco_dados <- banco(k,18,l,8)
+      
+      
+      banco_dados_teste <- banco_dados[481:nrow(banco_dados),]
+      
+      banco_dados_trei <- banco_dados[-(481:nrow(banco_dados)),]
+      
+      x.t <- as.matrix(banco_dados_trei[, -(1:5)])
+      y.t <- as.numeric(banco_dados_trei[, 4])
+      
+      x.teste <- as.matrix(banco_dados_teste[, -(1:5)])
+      y.teste <- as.numeric(banco_dados_teste[, 4])
+  
+  
   # Árvore binária
   
   modelo1 <- rpart(PLAYOFFS~., data = banco_dados_trei[,-(1:3)],control = rpart.control(maxdepth = 7, minsplit = 1), method = "class")
@@ -41,14 +60,16 @@ medidas = function(bancod){
     
   }
   
-  previsoes_modelo1 <- predict(modelo1, newdata=banco_dados_trei[,-(1:4)])[,2] > corte # Fazendo as previsões do modelo
+  previsoes_modelo1 <- predict(modelo1, newdata=banco_dados_teste[,-(1:4)])[,2] > corte # Fazendo as previsões do modelo
   
-  a <- confusionMatrix(table(banco_dados_trei[,4], as.numeric(previsoes_modelo1)),positive = "1",mode = "everything") # Gerando a matriz de confusão
+  a <- confusionMatrix(table(as.numeric(previsoes_modelo1),banco_dados_teste[,4]),positive = "1",mode = "everything") # Gerando a matriz de confusão
   
-  arvore <- c("Árvore Binaria", a$table[1,2], a$table[2,1],
+  arvore <- c("Árvore Binaria",k ,l,a$table[1,2], a$table[2,1],
              a$table[2,2], a$table[1,1],
              round(a$byClass[[11]],3), round(a$byClass[[1]],3),
              round(a$byClass[[5]],3), round(a$byClass[[7]],3)) # Criando vetor para depois adicionar a tabela
+  
+  med.testes <- rbind(med.testes, arvore)
   
   #Random Forest
   
@@ -83,17 +104,19 @@ medidas = function(bancod){
     
   }
   
-  previsoes_modelo1 <- as.numeric(predict(rf, data = banco_dados_trei[,-(1:4)],type = 'class')) > corte # Fazendo as previsões do modelo
+  previsoes_modelo1 <- as.numeric(predict(rf,banco_dados_teste[,-(1:4)])) > corte # Fazendo as previsões do modelo
   
   
   
   
-  a <- confusionMatrix(table(banco_dados_trei[,4], as.numeric(previsoes_modelo1)),positive = "1",mode = "everything") # Gerando a matriz de confusão
+  a <- confusionMatrix(table(as.numeric(previsoes_modelo1),banco_dados_teste[,4]),positive = "1",mode = "everything") # Gerando a matriz de confusão
   
-  randomforest <- c("Random Forest", a$table[1,2], a$table[2,1],
+  randomforest <- c("Random Forest",k ,l, a$table[1,2], a$table[2,1],
                     a$table[2,2], a$table[1,1],
                     round(a$byClass[[11]],3), round(a$byClass[[1]],3),
                     round(a$byClass[[5]],3), round(a$byClass[[7]],3)) # Criando vetor para depois adicionar a tabela
+  
+  med.testes <- rbind(med.testes, randomforest)
   
   # Ridge regression
   
@@ -130,17 +153,17 @@ medidas = function(bancod){
     
   }
   
-  previsoes_modelo2 <- predict(ridge_mod, s = melhor_lambda, newx = x.t) > corte # Fazendo as previsões do modelo
+  previsoes_modelo2 <- predict(ridge_mod, s = melhor_lambda, newx = x.teste) > corte # Fazendo as previsões do modelo
   
   
-  a <-  confusionMatrix(table(banco_dados_trei[,4], as.numeric(previsoes_modelo2)), positive = "1", mode = "everything") # Gerando a matriz de confusão
+  a <-  confusionMatrix(table(as.numeric(previsoes_modelo2),banco_dados_teste[,4]), positive = "1", mode = "everything") # Gerando a matriz de confusão
   
-  med_ridge <- c("Ridge", a$table[1,2], a$table[2,1],
+  med_ridge <- c("Ridge",k ,l, a$table[1,2], a$table[2,1],
                     a$table[2,2], a$table[1,1],
                  round(a$byClass[[11]],3), round(a$byClass[[1]],3),
                  round(a$byClass[[5]],3), round(a$byClass[[7]],3)) # Criando vetor para depois adicionar a tabela
   
-  
+  med.testes <- rbind(med.testes, med_ridge)
   #Lasso
   
   
@@ -176,22 +199,29 @@ medidas = function(bancod){
     
   }
   
-  previsoes_modelo2 <- predict(lasso_mod, s = melhor_lambda_lasso, newx = x.t) > corte # Fazendo as previsões do modelo
+  previsoes_modelo2 <- predict(lasso_mod, s = melhor_lambda_lasso, newx = x.teste) > corte # Fazendo as previsões do modelo
   
-  a <- confusionMatrix(table(banco_dados_trei[,4], as.numeric(previsoes_modelo2)), positive = "1", mode = "everything") # Gerando a matriz de confusão
+  a <- confusionMatrix(table(as.numeric(previsoes_modelo2),banco_dados_teste[,4]), positive = "1", mode = "everything") # Gerando a matriz de confusão
   
-  med_lasso <- c("Lasso", a$table[1,2], a$table[2,1],
+  med_lasso <- c("Lasso", k ,l,a$table[1,2], a$table[2,1],
                  a$table[2,2], a$table[1,1],
                  round(a$byClass[[11]],3), round(a$byClass[[1]],3),
                  round(a$byClass[[5]],3), round(a$byClass[[7]],3)) # Criando vetor para depois adicionar a tabela
   
   
-  med.testes <- rbind(arvore,randomforest,med_ridge,med_lasso) #Gerando tabela com os resultados dos modelos
+  med.testes <- rbind(med.testes, med_lasso) #Gerando tabela com os resultados dos modelos
+  #med.final <- append(med.final, med.testes )
   
-  colnames(med.testes) <- c("Técnica","Falso Negativo", "Falso Positivo", "Verdadeiro Positivo",
+    }
+  }
+  
+  colnames(med.testes) <- c("Técnica","Jogos","Média Móvel","Falso Negativo", "Falso Positivo", "Verdadeiro Positivo",
                             "Verdadeiro Negativo", "Acurácia Balanceada", "Sensitividade", "Precisão", "F1")
   
   return(med.testes)
 }
 
 mel <- medidas(1)
+mel1 <- medidas(1)
+
+mel_teste <- medidas(1)
